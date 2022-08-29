@@ -73,6 +73,7 @@ const (
 	NodeComment                    // A comment.
 	NodeBreak                      // A break action.
 	NodeContinue                   // A continue action.
+	NodeApply                      // An apply action.
 )
 
 // Nodes.
@@ -1005,4 +1006,40 @@ func (t *TemplateNode) tree() *Tree {
 
 func (t *TemplateNode) Copy() Node {
 	return t.tr.newTemplate(t.Pos, t.Line, t.Name, t.Pipe.CopyPipe())
+}
+
+// ApplyNode represents an {{apply}} action.
+type ApplyNode struct {
+	NodeType
+	Pos
+	tr   *Tree
+	Line int       // The line number in the input. Deprecated: Kept for compatibility.
+	Pipe *PipeNode // The pipeline to be evaluated.
+	List *ListNode // What to execute if the value is non-empty.
+}
+
+func (t *Tree) newApply(pos Pos, line int, pipe *PipeNode, list *ListNode) *ApplyNode {
+	return &ApplyNode{tr: t, NodeType: NodeWith, Pos: pos, Line: line, Pipe: pipe, List: list}
+}
+
+func (a *ApplyNode) String() string {
+	var sb strings.Builder
+	a.writeTo(&sb)
+	return sb.String()
+}
+
+func (a *ApplyNode) writeTo(sb *strings.Builder) {
+	sb.WriteString("{{apply ")
+	a.Pipe.writeTo(sb)
+	sb.WriteString("}}")
+	a.List.writeTo(sb)
+	sb.WriteString("{{end}}")
+}
+
+func (a *ApplyNode) tree() *Tree {
+	return a.tr
+}
+
+func (a *ApplyNode) Copy() Node {
+	return a.tr.newApply(a.Pos, a.Line, a.Pipe.CopyPipe(), a.List.CopyList())
 }

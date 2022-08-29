@@ -61,6 +61,7 @@ const (
 	itemVariable   // variable starting with '$', such as '$' or  '$1' or '$hello'
 	// Keywords appear after all the rest.
 	itemKeyword  // used only to delimit the keywords
+	itemApply    // apply keyword
 	itemBlock    // block keyword
 	itemBreak    // break keyword
 	itemContinue // continue keyword
@@ -77,6 +78,7 @@ const (
 
 var key = map[string]itemType{
 	".":        itemDot,
+	"apply":    itemApply,
 	"block":    itemBlock,
 	"break":    itemBreak,
 	"continue": itemContinue,

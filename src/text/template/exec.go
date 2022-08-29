@@ -5,6 +5,7 @@
 package template
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"internal/fmtsort"
@@ -268,6 +269,8 @@ func (s *state) walk(dot reflect.Value, node parse.Node) {
 		if len(node.Pipe.Decl) == 0 {
 			s.printValue(node, val)
 		}
+	case *parse.ApplyNode:
+		s.walkApply(dot, node)
 	case *parse.BreakNode:
 		panic(walkBreak)
 	case *parse.CommentNode:
@@ -445,6 +448,18 @@ func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 	newState.walk(dot, tmpl.Root)
 }
 
+func (s *state) walkApply(dot reflect.Value, a *parse.ApplyNode) {
+	s.at(a)
+
+	newState := *s
+	var wr bytes.Buffer
+	newState.wr = &wr
+	newState.walk(dot, a.List)
+
+	out := s.evalPipelineWithInitialValue(dot, a.Pipe, reflect.ValueOf(wr.String()))
+	s.printValue(a, out)
+}
+
 // Eval functions evaluate pipelines, commands, and their elements and extract
 // values from the data structure by examining fields, calling methods, and so on.
 // The printing of those values happens only through walk functions.
@@ -453,12 +468,12 @@ func (s *state) walkTemplate(dot reflect.Value, t *parse.TemplateNode) {
 // pipeline has a variable declaration, the variable will be pushed on the
 // stack. Callers should therefore pop the stack after they are finished
 // executing commands depending on the pipeline value.
-func (s *state) evalPipeline(dot reflect.Value, pipe *parse.PipeNode) (value reflect.Value) {
+func (s *state) evalPipelineWithInitialValue(dot reflect.Value, pipe *parse.PipeNode, initialValue reflect.Value) (value reflect.Value) {
 	if pipe == nil {
 		return
 	}
 	s.at(pipe)
-	value = missingVal
+	value = initialValue
 	for _, cmd := range pipe.Cmds {
 		value = s.evalCommand(dot, cmd, value) // previous value is this one's final arg.
 		// If the object has type interface{}, dig down one level to the thing inside.
@@ -474,6 +489,10 @@ func (s *state) evalPipeline(dot reflect.Value, pipe *parse.PipeNode) (value ref
 		}
 	}
 	return value
+}
+
+func (s *state) evalPipeline(dot reflect.Value, pipe *parse.PipeNode) reflect.Value {
+	return s.evalPipelineWithInitialValue(dot, pipe, missingVal)
 }
 
 func (s *state) notAFunction(args []parse.Node, final reflect.Value) {

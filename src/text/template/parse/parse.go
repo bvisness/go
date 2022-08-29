@@ -286,6 +286,7 @@ func IsEmptyTree(n Node) bool {
 	case *TextNode:
 		return len(bytes.TrimSpace(n.Text)) == 0
 	case *WithNode:
+	case *ApplyNode:
 	default:
 		panic("unknown node: " + n.String())
 	}
@@ -392,6 +393,8 @@ func (t *Tree) clearActionLine() {
 // First word could be a keyword such as range.
 func (t *Tree) action() (n Node) {
 	switch token := t.nextNonSpace(); token.typ {
+	case itemApply:
+		return t.applyControl()
 	case itemBlock:
 		return t.blockControl()
 	case itemBreak:
@@ -613,6 +616,22 @@ func (t *Tree) elseControl() Node {
 	}
 	token := t.expect(itemRightDelim, "else")
 	return t.newElse(token.pos, token.line)
+}
+
+// Apply:
+//
+//	{{apply pipeline}}
+//
+// Apply keyword is past. The pipeline is mandatory.
+func (t *Tree) applyControl() Node {
+	const context = "apply clause"
+
+	pipe := t.pipeline(context, itemRightDelim)
+	list, next := t.itemList()
+	if next.Type() != nodeEnd {
+		t.errorf("expected end; found %s", next)
+	}
+	return t.newApply(pipe.Position(), pipe.Line, pipe, list)
 }
 
 // Block:

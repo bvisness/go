@@ -156,6 +156,8 @@ func (e *escaper) escape(c context, n parse.Node) context {
 		return e.escapeText(c, n)
 	case *parse.WithNode:
 		return e.escapeBranch(c, &n.BranchNode, "with")
+	case *parse.ApplyNode:
+		return e.escapeApply(c, n)
 	}
 	panic("escaping " + n.String() + " is unimplemented")
 }
@@ -555,6 +557,11 @@ func joinRange(c0 context, rc *rangeContext) context {
 		}
 	}
 	return c0
+}
+
+func (e *escaper) escapeApply(c context, n *parse.ApplyNode) context {
+	c = e.escapeList(c, n.List)
+	return c
 }
 
 // escapeList escapes a list template node.

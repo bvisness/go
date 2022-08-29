@@ -265,6 +265,8 @@ var parseTests = []parseTest{
 	{"spaces around break", "{{range .SI}}{{.}}{{ break }}{{end}}", noError,
 		`{{range .SI}}{{.}}{{break}}{{end}}`},
 
+	{"apply definition", `{{apply .X|.Y}}hello{{end}}`, noError, `{{apply .X | .Y}}"hello"{{end}}`},
+
 	// Errors.
 	{"unclosed action", "hello{{range", hasError, ""},
 	{"unmatched end", "{{end}}", hasError, ""},
@@ -320,6 +322,8 @@ var parseTests = []parseTest{
 	{"empty pipeline", `{{printf "%d" ( ) }}`, hasError, ""},
 	// Missing pipeline in block
 	{"block definition", `{{block "foo"}}hello{{end}}`, hasError, ""},
+	// Missing pipeline in apply
+	{"apply definition", `{{apply}}hello{{end}}`, hasError, ""},
 }
 
 var builtins = map[string]any{
